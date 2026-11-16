@@ -4,7 +4,7 @@ A macOS menu bar app that changes an external monitor's settings over DDC/CI, so
 
 Brightness, contrast, sharpness, volume, colour preset, red/green/blue gain and input, from a sun icon next to the battery.
 
-Built for an LG UltraWide on an M4 Pro MacBook Pro (macOS 26) over USB-C. It should work with most DDC-capable monitors on Apple Silicon over USB-C or DisplayPort; the input buttons use LG's codes.
+Built for an LG UltraWide on an M4 Pro MacBook Pro (macOS 26). It should work with most DDC-capable monitors plugged straight into an Apple Silicon Mac; the input buttons use LG's codes.
 
 ## Install
 
@@ -30,18 +30,24 @@ swift build -c release --product lgbar
 
 Settings: `brightness contrast colorPreset redGain greenGain blueGain volume sharpness mute power input`, or any raw VCP code in hex.
 
-## Tested on an LG UltraWide over USB-C
+## Tested
 
-**Not reliable on this monitor.** In some stretches every write, whatever the setting or value, makes the monitor drop the DisplayPort link: the screen goes black for a few seconds and macOS logs `display HPD removed` right after the write. In other stretches about 20 writes in a row went through with no drop. The bad stretches started after a display sleep/wake. No setting has been confirmed by eye yet.
+LG UltraWide (3440x1440) on an M4 Pro MacBook Pro, macOS 26.
 
-What is known:
+| Connection | Result |
+|---|---|
+| Mac's built-in HDMI port, direct cable | Brightness works, no link drops while dragging the slider. Other settings not yet checked by eye. |
+| USB-C adapter with HDMI out (Algoltek `AG6320` bridge chip) | Unreliable. In some stretches every write makes the adapter drop the video link and the screen goes black for a few seconds. |
 
-- The bytes are the standard Set VCP message, the same ones m1ddc and MonitorControl send. Sending once instead of twice does not prevent the drop.
-- Other monitors on USB-C show the same thing with MonitorControl ([discussion 1371](https://github.com/MonitorControl/MonitorControl/discussions/1371)), and Lunar's author describes monitors that lose signal on any DDC traffic as a firmware problem with no software fix ([notes](https://notes.alinpanaitiu.com/Weird%20monitor%20bugs), [FAQ](https://lunar.fyi/faq)).
-- This monitor's USB-C port reports DisplayPort sink ID `AG6320`, which looks like a DisplayPort-to-HDMI bridge chip inside the monitor. Unconfirmed as the cause.
-- LG's OnScreen Control uses a USB HID device (043E:9A39) on some models instead of the video link. This monitor does not expose one over USB-C.
+## If the screen goes black when you change a setting
 
-Worth trying: an HDMI or DisplayPort cable instead of USB-C.
+Check what sits between the Mac and the monitor. A USB-C hub, dongle or USB-C-to-HDMI cable has its own bridge chip that has to pass DDC along, and some reset the video link when they get a DDC write. macOS logs `display HPD removed` right after the write when this happens:
+
+```bash
+log show --last 5m --predicate 'process == "kernel" AND eventMessage CONTAINS "display HPD"'
+```
+
+Plug the monitor straight into the Mac (built-in HDMI, or a USB-C to DisplayPort cable). Sending each message once instead of twice does not help. Other monitors show the same symptom with MonitorControl ([discussion 1371](https://github.com/MonitorControl/MonitorControl/discussions/1371)), and Lunar's author describes it as hardware that software can't fix ([notes](https://notes.alinpanaitiu.com/Weird%20monitor%20bugs)).
 
 ## Limits
 
