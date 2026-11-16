@@ -32,10 +32,16 @@ Settings: `brightness contrast colorPreset redGain greenGain blueGain volume sha
 
 ## Tested on an LG UltraWide over USB-C
 
-| Setting | Result |
-|---|---|
-| Brightness | works |
-| Everything else | being tested |
+**Not reliable on this monitor.** In some stretches every write, whatever the setting or value, makes the monitor drop the DisplayPort link: the screen goes black for a few seconds and macOS logs `display HPD removed` right after the write. In other stretches about 20 writes in a row went through with no drop. The bad stretches started after a display sleep/wake. No setting has been confirmed by eye yet.
+
+What is known:
+
+- The bytes are the standard Set VCP message, the same ones m1ddc and MonitorControl send. Sending once instead of twice does not prevent the drop.
+- Other monitors on USB-C show the same thing with MonitorControl ([discussion 1371](https://github.com/MonitorControl/MonitorControl/discussions/1371)), and Lunar's author describes monitors that lose signal on any DDC traffic as a firmware problem with no software fix ([notes](https://notes.alinpanaitiu.com/Weird%20monitor%20bugs), [FAQ](https://lunar.fyi/faq)).
+- This monitor's USB-C port reports DisplayPort sink ID `AG6320`, which looks like a DisplayPort-to-HDMI bridge chip inside the monitor. Unconfirmed as the cause.
+- LG's OnScreen Control uses a USB HID device (043E:9A39) on some models instead of the video link. This monitor does not expose one over USB-C.
+
+Worth trying: an HDMI or DisplayPort cable instead of USB-C.
 
 ## Limits
 
