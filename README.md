@@ -18,6 +18,8 @@ cd lg-monitor-bar
 
 This builds `LG Monitor Bar.app`, copies it to `~/Applications` and starts it. Tick **Open at login** in the panel to keep it running.
 
+**Keep Mac awake with lid closed** stops a closed-lid Mac from sleeping when the monitor switches to another input. It flips `pmset disablesleep`, so macOS asks for your password each time. Untick it when you're done: while it is on the Mac never sleeps, even on battery.
+
 ## Command line
 
 The same controls without the UI, handy for Shortcuts, Raycast or a hotkey tool:

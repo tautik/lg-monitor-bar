@@ -29,6 +29,7 @@ struct ControlPanel: View {
     @AppStorage("colorPreset") private var preset = 5
     @State private var showColor = false
     @State private var openAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var keepAwake = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -67,6 +68,21 @@ struct ControlPanel: View {
             }
 
             Divider()
+
+            Toggle("Keep Mac awake with lid closed", isOn: $keepAwake)
+                .toggleStyle(.checkbox)
+                .controlSize(.small)
+                .help("Stops the Mac sleeping when the monitor switches to another input. Asks for your password.")
+                .onAppear { keepAwake = sleepDisabled() }
+                .onChange(of: keepAwake) { _, on in
+                    // Also fires when we sync the box to the real state; only act on a real change.
+                    guard on != sleepDisabled() else { return }
+                    Task.detached {
+                        run("/usr/bin/osascript", ["-e", "do shell script \"/usr/bin/pmset -a disablesleep \(on ? 1 : 0)\" with administrator privileges"])
+                        let now = sleepDisabled()
+                        await MainActor.run { keepAwake = now }
+                    }
+                }
 
             HStack {
                 Toggle("Open at login", isOn: $openAtLogin)
@@ -122,6 +138,24 @@ struct SettingSlider: View {
                 .onChange(of: Int(value)) { _, new in send(vcp, new) }
         }
     }
+}
+
+@discardableResult
+private func run(_ path: String, _ args: [String]) -> String {
+    let process = Process()
+    let pipe = Pipe()
+    process.executableURL = URL(fileURLWithPath: path)
+    process.arguments = args
+    process.standardOutput = pipe
+    guard (try? process.run()) != nil else { return "" }
+    let out = pipe.fileHandleForReading.readDataToEndOfFile()
+    process.waitUntilExit()
+    return String(decoding: out, as: UTF8.self)
+}
+
+/// True when `pmset disablesleep` is on, the only setting that keeps a closed-lid Mac awake with no display.
+private func sleepDisabled() -> Bool {
+    run("/usr/bin/pmset", ["-g"]).range(of: #"SleepDisabled\s+1"#, options: .regularExpression) != nil
 }
 
 private func externalDisplayName() -> String {
